@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MH Portal — Interactive Prototype (Classic Layout)</title>
+<style>
+:root{
+  --red:#C00020; --red-dark:#9B0019; --red-deep:#7A0014;
+  --blue:#0066B3; --navy:#003366; --footer-navy:#1F4074;
+  --heading:#111827; --slate:#374151; --body:#4B5563;
+  --bg-alt:#F9FAFB; --border:#E5E7EB; --white:#FFFFFF;
+  --green:#0F9D58; --amber:#D9A400;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Century Gothic","Futura","Helvetica Neue",Arial,sans-serif;
+  color:var(--body); background:#fff; font-size:14px; line-height:1.6;
+}
+a{ color:var(--blue); text-decoration:none; cursor:pointer; }
+.max{ max-width:1160px; margin:0 auto; padding:0 32px; }
+b, strong { color:var(--heading); }
+
+.screen{ display:none; }
+.screen.active{ display:block; }
+.chrome-hidden #header-mount, .chrome-hidden #site-footer{ display:none; }
+
+/* photo placeholder */
+.photo{ position:relative; overflow:hidden; background:
+  radial-gradient(circle at 30% 25%, rgba(255,255,255,0.08), transparent 45%),
+  linear-gradient(135deg,#12345C 0%, #0B2447 60%, #071A33 100%); }
+.photo .scrim{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,27,72,0) 30%, rgba(0,27,72,0.9) 100%); }
+.photo .plane{ position:absolute; font-size:46px; opacity:0.14; color:#fff; }
+.photo .cap{ position:relative; z-index:2; padding:16px 20px; color:#fff; display:flex; align-items:flex-end; justify-content:space-between; height:100%; }
+.photo .cap .lbl{ font-weight:700; letter-spacing:0.2px; font-size:15px; }
+.photo .cap .more{ font-weight:700; font-size:11.5px; color:#fff; opacity:0.9; white-space:nowrap; }
+.tile{ position:relative; height:150px; border-radius:12px; overflow:hidden; transition:transform .15s ease, box-shadow .15s ease; }
+.tile:hover{ transform:translateY(-2px); box-shadow:0 14px 24px rgba(0,0,0,0.18); }
+
+/* header */
+header.site{ background:linear-gradient(180deg,var(--navy),#00224A); color:#fff; }
+header.site .bar{ display:flex; align-items:center; justify-content:space-between; height:76px; }
+header.site .logo{ font-weight:800; font-size:19px; letter-spacing:0.2px; }
+header.site .logo .mh{ color:var(--red); }
+header.site nav.main{ display:flex; gap:28px; }
+header.site nav.main a{ color:#fff; font-size:13px; font-weight:700; padding-bottom:6px; border-bottom:3px solid transparent; }
+header.site nav.main a.active{ border-bottom-color:var(--blue); }
+header.site .utils{ display:flex; align-items:center; gap:16px; font-size:12.5px; position:relative; }
+header.site .locale-pill{ background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.35); border-radius:9999px; padding:5px 12px; font-size:11.5px; font-weight:700; cursor:pointer; user-select:none; }
+.locale-wrap{ position:relative; display:inline-block; }
+.locale-dropdown{ position:absolute; top:36px; right:0; background:#fff; color:var(--heading); border-radius:10px; box-shadow:0 10px 15px -3px rgba(0,0,0,.15), 0 4px 6px -4px rgba(0,0,0,.1); width:190px; padding:6px; display:none; z-index:100; }
+.locale-dropdown.active{ display:block; }
+.locale-dropdown .loc-item{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 10px; border-radius:8px; font-size:12.5px; cursor:pointer; }
+.locale-dropdown .loc-item:hover{ background:var(--bg-alt); }
+.locale-dropdown .loc-check{ color:var(--blue); font-weight:800; }
+header.site .pill-white{ background:#fff; color:var(--blue); font-weight:700; font-size:12.5px; padding:9px 20px; border-radius:9999px; cursor:pointer; }
+.book-pill{ display:flex; align-items:center; gap:6px; border:1.5px solid #fff; color:#fff; font-weight:700; font-size:12px; padding:8px 18px; border-radius:9999px; cursor:pointer; }
+/* Authenticated header: locale is display-only (would be resolved from the
+   agent's profile automatically, not switched by hand) so no pointer/caret. */
+header.site .locale-pill-static{ cursor:default; }
+
+.notice{ background:#F3F4F6; }
+.notice .row{ display:flex; align-items:center; gap:10px; padding:9px 0; font-size:12.5px; color:var(--body); }
+.notice b{ color:var(--navy); }
+.notice .spacer{ flex:1; }
+.notice a{ font-weight:700; }
+
+.flag{ display:flex; align-items:center; gap:5px; margin-bottom:18px; }
+.flag .bar1{ width:9px; height:30px; background:var(--blue); border-radius:2px; }
+.flag .bar2{ width:4px; height:22px; background:var(--navy); border-radius:2px; }
+.flag h2{ margin:0 0 0 10px; font-size:24px; font-weight:800; color:var(--heading); }
+
+h1.hero-h1{ color:#fff; font-size:36px; font-weight:800; margin:0; line-height:1.2; }
+h1.page-h1{ color:var(--heading); font-size:29px; font-weight:800; margin:0 0 16px; }
+
+.btn-primary{ display:inline-block; background:var(--blue); color:#fff; font-weight:700; font-size:14px; padding:14px 30px; border-radius:6px; border:none; cursor:pointer; }
+.btn-pill-cta{ display:inline-flex; align-items:center; gap:6px; background:var(--blue); color:#fff; font-weight:700; font-size:13px; padding:11px 22px; border-radius:9999px; border:none; cursor:pointer; }
+
+.card{ background:#fff; border-radius:12px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); }
+.news-card{ background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); }
+.news-card .thumb{ height:110px; border-radius:12px 12px 0 0; }
+.news-card .body{ padding:16px 18px; }
+.news-card h4{ margin:0 0 6px; font-size:15px; font-weight:800; color:var(--heading); }
+.news-card p{ margin:0 0 10px; font-size:12.5px; color:var(--body); }
+.news-card .link{ font-weight:700; font-size:12.5px; }
+
+footer.site{ background:var(--footer-navy); color:#E5E7EB; margin-top:44px; }
+footer.site .cols{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px; padding:40px 0 28px; }
+footer.site .cols h5{ color:#fff; font-size:13.5px; font-weight:800; margin:0 0 12px; }
+footer.site .cols a{ display:block; color:#C7D2E0; font-size:12.5px; margin-bottom:8px; }
+footer.site .cta-row{ display:flex; justify-content:space-between; align-items:center; padding:20px 0; border-top:1px solid rgba(255,255,255,0.15); }
+footer.site .social{ display:flex; gap:10px; }
+footer.site .social span{ width:32px; height:32px; border-radius:50%; background:#fff; color:var(--footer-navy); display:flex; align-items:center; justify-content:center; font-size:13px; }
+footer.site .subscribe{ background:#fff; color:var(--footer-navy); font-weight:700; font-size:12.5px; padding:10px 24px; border-radius:9999px; cursor:pointer; border:none; }
+footer.site .legal{ display:flex; justify-content:space-between; padding:14px 0; font-size:11px; color:#9FB0C9; border-top:1px solid rgba(255,255,255,0.15); }
+
+.grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.section-alt{ background:var(--bg-alt); }
+
+.breadcrumb{ font-size:11.5px; color:var(--body); padding:16px 0 0; }
+.breadcrumb a{ color:var(--body); font-weight:700; }
+.breadcrumb span.sep{ margin:0 6px; }
+.breadcrumb span.cur{ color:var(--heading); font-weight:700; }
+
+.tabs{ display:flex; gap:26px; border-bottom:1px solid var(--border); margin:20px 0 0; }
+.tabs .tab{ padding:10px 2px; font-size:13px; font-weight:700; color:var(--body); border-bottom:3px solid transparent; cursor:pointer; }
+.tabs .tab.active{ color:var(--heading); border-bottom-color:var(--blue); }
+
+.list-row{ display:flex; align-items:center; padding:14px 16px; font-size:13px; }
+.list-row:nth-child(odd){ background:#fff; }
+.list-row:nth-child(even){ background:var(--bg-alt); }
+.list-row .title{ flex:1; font-weight:700; color:var(--heading); }
+.badge-new{ background:#E5F0F9; color:var(--blue); font-size:9.5px; font-weight:700; padding:3px 9px; border-radius:9999px; margin-left:10px; }
+.list-row .date{ width:110px; color:var(--body); font-size:12px; }
+.list-row .dl{ width:120px; text-align:right; color:var(--blue); font-weight:700; font-size:12px; cursor:pointer; }
+
+.svc-wrap{ display:flex; gap:0; margin-top:20px; border-radius:12px; overflow:hidden; background:#fff; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); }
+.svc-side{ width:230px; background:var(--bg-alt); border-right:1px solid var(--border); padding:18px 0; }
+.svc-side .item{ display:flex; align-items:center; gap:10px; padding:10px 18px; font-size:12.5px; color:var(--body); position:relative; cursor:pointer; }
+.svc-side .item.active{ background:#E5F0F9; color:var(--blue); font-weight:700; border-radius:9999px; margin:0 10px; }
+.svc-side .item .count{ margin-left:auto; color:var(--body); font-size:11.5px; }
+.svc-side .item.active .count{ color:var(--blue); }
+.svc-main{ flex:1; padding:22px 26px; }
+.svc-topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.svc-search{ border:1px solid var(--border); border-radius:6px; padding:9px 14px; font-size:12px; color:#9CA3AF; width:260px; }
+.svc-filters{ display:flex; gap:10px; margin-bottom:16px; }
+.svc-filters .f{ border:1px solid var(--border); border-radius:6px; padding:8px 14px; font-size:11.5px; color:var(--body); }
+.svc-list{ border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.green{ color:#0F9D58; } .amber{ color:#D9A400; }
+
+.modal-overlay{ position:fixed; inset:0; background:rgba(0,27,72,0.55); display:none; align-items:flex-start; justify-content:center; padding-top:80px; z-index:500; }
+.modal-overlay.active{ display:flex; }
+.modal{ position:relative; background:#fff; border-radius:12px; width:640px; max-width:92vw; padding:30px 34px; box-shadow:0 20px 40px rgba(0,0,0,0.25); }
+.modal h3{ font-size:20px; font-weight:800; color:var(--heading); margin:0 0 18px; }
+.modal-close{ position:absolute; top:14px; right:16px; font-size:22px; color:#9CA3AF; cursor:pointer; line-height:1; }
+.modal-close:hover{ color:var(--heading); }
+.modal .opt-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.modal .opt{ border:1px solid var(--border); border-radius:10px; padding:15px; cursor:pointer; transition:border-color .15s ease, background .15s ease; }
+.modal .opt:hover{ border-color:var(--blue); background:#F8FBFF; }
+.modal .opt .lbl{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--blue); font-weight:700; margin-bottom:6px; }
+.modal .opt b{ display:block; color:var(--heading); font-size:13.5px; margin-bottom:4px; }
+.modal .opt p{ margin:0; font-size:11px; color:var(--body); }
+
+.op-wrap{ background:var(--bg-alt); padding:44px 0; min-height:60vh; }
+.op-card{ background:#fff; max-width:900px; margin:0 auto; padding:38px 54px; border-radius:12px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); }
+.op-h1{ color:var(--heading); font-size:27px; font-weight:800; margin:0 0 22px; }
+ul.op-list{ list-style:none; padding:0; margin:0; }
+ul.op-list li{ background:#fff; padding:20px 0; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+ul.op-list li:last-child{ border-bottom:none; }
+.op-date{ font-size:11px; font-weight:700; color:var(--heading); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:5px; display:block; }
+.op-title{ font-size:14.5px; color:var(--heading); margin:0; font-weight:700; }
+.op-view{ font-size:11.5px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:0.4px; white-space:nowrap; margin-left:24px; cursor:pointer; }
+.op-share{ font-size:13.5px; color:var(--blue); font-weight:700; margin:0 0 22px; cursor:pointer; display:inline-block; }
+.op-body p{ font-size:14px; color:var(--body); line-height:24px; margin:0 0 14px; }
+
+/* login / OTP screens */
+.login-page{ min-height:100vh; background:#fff; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; padding:60px 20px; }
+.login-shape{ position:absolute; opacity:0.07; }
+.login-shape.s1{ width:900px; height:900px; background:linear-gradient(135deg,var(--blue),var(--navy)); top:-420px; left:-320px; transform:rotate(18deg); border-radius:80px; }
+.login-shape.s2{ width:700px; height:700px; background:linear-gradient(135deg,var(--red),var(--red-deep)); bottom:-380px; right:-260px; transform:rotate(-12deg); border-radius:80px; }
+.login-topbar{ position:absolute; top:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; padding:26px 40px; z-index:3; }
+.login-topbar .logo{ font-weight:800; font-size:19px; color:var(--heading); }
+.login-topbar .logo .mh{ color:var(--red); }
+.login-card{ position:relative; z-index:2; background:#fff; border-radius:16px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.18), 0 10px 20px -8px rgba(0,0,0,0.08); width:420px; max-width:92vw; padding:42px 38px; }
+.login-card h1{ font-size:24px; font-weight:800; color:var(--heading); margin:0 0 26px; }
+.login-card h1.otp-h1{ margin-bottom:8px; }
+.otp-sub{ font-size:13px; color:var(--body); margin:0 0 26px; line-height:1.6; }
+.field{ margin-bottom:18px; }
+.field label{ display:block; font-size:12.5px; font-weight:700; color:var(--heading); margin-bottom:7px; }
+.field .input-wrap{ position:relative; }
+.field input[type="text"], .field input[type="password"]{ width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; color:var(--heading); font-family:inherit; outline:none; transition:border-color .15s ease; }
+.field input:focus{ border-color:var(--blue); }
+.field .toggle-pw{ position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--blue); font-weight:700; cursor:pointer; background:none; border:none; }
+.field-row-between{ display:flex; justify-content:space-between; align-items:center; margin:-8px 0 18px; }
+.link-sm{ font-size:12.5px; font-weight:700; color:var(--blue); cursor:pointer; }
+.btn-full{ display:block; width:100%; text-align:center; background:var(--blue); color:#fff; font-weight:700; font-size:14.5px; padding:13px; border-radius:8px; border:none; cursor:pointer; }
+.divider{ display:flex; align-items:center; gap:12px; margin:22px 0; font-size:11px; color:#9CA3AF; font-weight:700; }
+.divider::before, .divider::after{ content:""; flex:1; height:1px; background:var(--border); }
+.btn-ms{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#fff; border:1.5px solid var(--border); border-radius:8px; padding:11px; font-weight:700; font-size:13.5px; color:var(--heading); cursor:pointer; }
+.ms-logo{ display:grid; grid-template-columns:1fr 1fr; gap:1.5px; width:15px; height:15px; }
+.ms-logo span{ background:#F25022; }
+.ms-logo span:nth-child(2){ background:#7FBA00; }
+.ms-logo span:nth-child(3){ background:#00A4EF; }
+.ms-logo span:nth-child(4){ background:#FFB900; }
+.login-footer{ text-align:center; font-size:12.5px; color:var(--body); margin-top:26px; }
+.back-link{ display:inline-flex; align-items:center; gap:4px; font-size:12.5px; font-weight:700; color:var(--body); cursor:pointer; margin-bottom:18px; }
+.back-link:hover{ color:var(--blue); }
+.otp-boxes{ display:flex; gap:10px; justify-content:space-between; margin-bottom:22px; }
+.otp-boxes input{ width:44px; height:52px; text-align:center; font-size:20px; font-weight:800; color:var(--heading); border:1.5px solid var(--border); border-radius:8px; outline:none; font-family:inherit; }
+.otp-boxes input:focus{ border-color:var(--blue); }
+.otp-resend{ text-align:center; font-size:12.5px; color:var(--body); margin-top:20px; }
+
+/* transition overlay */
+#transition-overlay{ position:fixed; inset:0; background:rgba(0,27,72,0.92); color:#fff; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; z-index:9999; opacity:0; pointer-events:none; transition:opacity .25s ease; }
+#transition-overlay.active{ opacity:1; pointer-events:all; }
+#transition-overlay .spinner{ width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.3); border-top-color:#fff; animation:spin .8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+#transition-overlay .t-msg{ font-size:14px; font-weight:600; }
+
+/* toast */
+#toast{ position:fixed; left:50%; bottom:30px; transform:translateX(-50%) translateY(20px); background:var(--heading); color:#fff; padding:12px 22px; border-radius:9999px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:all .25s ease; z-index:9998; box-shadow:0 10px 25px rgba(0,0,0,.25); max-width:80vw; text-align:center; }
+#toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* prototype menu */
+#proto-menu{ position:fixed; right:20px; bottom:20px; z-index:9997; }
+#proto-toggle{ background:var(--navy); color:#fff; border:none; border-radius:9999px; padding:12px 20px; font-weight:700; font-size:12.5px; cursor:pointer; box-shadow:0 10px 20px rgba(0,0,0,.25); display:flex; align-items:center; gap:8px; }
+#proto-panel{ position:absolute; bottom:54px; right:0; background:#fff; border-radius:12px; box-shadow:0 15px 30px rgba(0,0,0,.25); width:250px; padding:14px; display:none; max-height:70vh; overflow-y:auto; }
+#proto-panel.active{ display:block; }
+.proto-group{ font-size:10px; text-transform:uppercase; letter-spacing:0.6px; color:var(--body); font-weight:700; margin:14px 0 6px; }
+.proto-group:first-child{ margin-top:0; }
+#proto-panel button{ display:block; width:100%; text-align:left; background:none; border:none; padding:9px 8px; font-size:12.5px; color:var(--heading); border-radius:8px; cursor:pointer; }
+#proto-panel button:hover{ background:var(--bg-alt); color:var(--blue); }
+</style>
+</head>
+<body>
+
+<div id="header-mount"></div>
+
+<main>
+
+<!-- LOGIN: STEP 1 - CREDENTIALS -->
+<section id="screen-login" class="screen">
+  <div class="login-page">
+    <div class="login-shape s1"></div>
+    <div class="login-shape s2"></div>
+    <div class="login-topbar">
+      <div class="logo"><span class="mh">MH</span> Portal</div>
+      <div class="locale-wrap">
+        <span class="locale-pill" onclick="toggleLocaleMenu(event)"><span class="locale-label">ENG 🇬🇧</span> ▾</span>
+        <div class="locale-dropdown"></div>
+      </div>
+    </div>
+    <div class="login-card">
+      <h1>Sign In</h1>
+      <div class="field">
+        <label for="login-userid">User ID</label>
+        <div class="input-wrap"><input type="text" id="login-userid" placeholder="e.g. AG10293"></div>
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <div class="input-wrap">
+          <input type="password" id="login-password" placeholder="Enter your password">
+          <button type="button" class="toggle-pw" onclick="togglePasswordVisibility()">Show</button>
+        </div>
+      </div>
+      <div class="field-row-between">
+        <span></span>
+        <span class="link-sm" onclick="toast('Password reset link sent (demo)')">Forgot your Password?</span>
+      </div>
+      <button class="btn-full" onclick="submitLogin()">Continue</button>
+      <div class="divider">OR</div>
+      <button class="btn-ms" onclick="toast('Demo: would redirect to Microsoft sign-in')">
+        <span class="ms-logo"><span></span><span></span><span></span><span></span></span>
+        Sign in with Microsoft
+      </button>
+      <div class="login-footer">Don't have an Account? <span class="link-sm" onclick="toast('Registration is handled by MH\'s existing sign-up workflow (demo)')">Sign Up</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGIN: STEP 2 - OTP -->
+<section id="screen-otp" class="screen">
+  <div class="login-page">
+    <div class="login-shape s1"></div>
+    <div class="login-shape s2"></div>
+    <div class="login-topbar">
+      <div class="logo"><span class="mh">MH</span> Portal</div>
+      <div class="locale-wrap">
+        <span class="locale-pill" onclick="toggleLocaleMenu(event)"><span class="locale-label">ENG 🇬🇧</span> ▾</span>
+        <div class="locale-dropdown"></div>
+      </div>
+    </div>
+    <div class="login-card">
+      <span class="back-link" onclick="showScreen('screen-login')">‹ Back</span>
+      <h1 class="otp-h1">Verify Your Identity</h1>
+      <p class="otp-sub">We've sent a 6-digit verification code to your registered mobile number ending in <b>••••1234</b>.</p>
+      <div class="otp-boxes" id="otp-boxes">
+        <input type="text" inputmode="numeric" maxlength="1">
+        <input type="text" inputmode="numeric" maxlength="1">
+        <input type="text" inputmode="numeric" maxlength="1">
+        <input type="text" inputmode="numeric" maxlength="1">
+        <input type="text" inputmode="numeric" maxlength="1">
+        <input type="text" inputmode="numeric" maxlength="1">
+      </div>
+      <button class="btn-full" onclick="submitOtp()">Verify &amp; Sign In</button>
+      <div class="otp-resend">Didn't get a code? <span class="link-sm" onclick="toast('New code sent (demo)')">Resend Code</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- PUBLIC: HOME -->
+<section id="screen-pub-home" class="screen">
+<div class="max" style="padding-top:26px;">
+  <div class="grid2" style="grid-template-columns:1.4fr 1fr; margin-bottom:24px;">
+    <div class="photo tile" id="pub-hero-photo" style="height:320px; cursor:default;">
+      <div class="plane" style="top:30px; left:60%;">✈</div>
+      <div class="scrim"></div>
+      <div class="cap"><div><h1 class="hero-h1">Explore Langkawi with MH</h1></div><div style="color:#fff;">●○○</div></div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="photo tile" data-img="operationalUpdates" style="height:150px;" onclick="goUpdates()"><div class="scrim"></div><div class="cap"><span class="lbl">Operational Updates</span><span class="more">Read More ›</span></div></div>
+      <div class="photo tile" data-img="policyProcedures" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Policy Procedures</span><span class="more">Read More ›</span></div></div>
+    </div>
+  </div>
+
+  <div class="grid3" id="pub-home-tiles-row" style="margin-bottom:40px;">
+    <div class="photo tile" data-img="fareSheets" style="height:110px;" onclick="goResource()"><div class="cap" style="align-items:flex-start;"><span class="lbl">Fare Sheets</span><span class="more">Read More ›</span></div></div>
+    <div class="photo tile" data-img="policyDocument" style="height:110px;" onclick="goResource()"><div class="cap" style="align-items:flex-start;"><span class="lbl">Policy Document</span><span class="more">Read More ›</span></div></div>
+    <div class="photo tile" data-img="travelInfoCentre" style="height:110px;" onclick="goResource()"><div class="cap" style="align-items:flex-start;"><span class="lbl">Travel Info Centre</span><span class="more">Read More ›</span></div></div>
+  </div>
+
+  <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Airline News</h2></div>
+  <div class="grid3" style="margin-bottom:40px;">
+    <div class="news-card"><div class="photo thumb" data-img="newsEastMalaysia"></div><div class="body"><h4>New Routes to East Malaysia</h4><p>MH expands connectivity across Sabah and Sarawak this season.</p><a class="link" onclick="goUpdateDetail()">Find out more ›</a></div></div>
+    <div class="news-card"><div class="photo thumb" data-img="newsPartnerOffers"></div><div class="body"><h4>Enrich Travel Partner Offers</h4><p>Exclusive fares for appointed travel agents booking this quarter.</p><a class="link" onclick="goUpdateDetail()">Find out more ›</a></div></div>
+    <div class="news-card"><div class="photo thumb" data-img="newsCabinUpgrade"></div><div class="body"><h4>Cabin Upgrade Programme</h4><p>New Business Suite rollout across the long-haul fleet.</p><a class="link" onclick="goUpdateDetail()">Find out more ›</a></div></div>
+  </div>
+</div>
+</section>
+
+<!-- PUBLIC: CATEGORY HUB -->
+<section id="screen-pub-hub" class="screen">
+<div class="max" style="padding-top:28px;">
+  <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Agent Resources</h2></div>
+  <div class="grid3" style="margin-bottom:22px;">
+    <div class="photo tile" data-img="fareSheets" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Fare Sheets</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="policyDocument" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Policy Documents</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="travelInfoCentre" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Travel Info Centre</span><span style="color:#fff;">›</span></div></div>
+  </div>
+  <div class="grid3" style="margin-bottom:36px;">
+    <div class="photo tile" data-img="tradeCirculars" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Trade Circulars</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="groupBookings" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Group Bookings</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="trainingCertification" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Training &amp; Certification</span><span style="color:#fff;">›</span></div></div>
+  </div>
+</div>
+</section>
+
+<!-- PUBLIC: MARKETING EXPLAINER (shared between public & auth headers) -->
+<section id="screen-pub-explainer" class="screen">
+<div class="photo" data-img="ndcHero" style="height:280px; position:relative;">
+  <div class="plane" style="top:40px; left:70%; font-size:80px;">✈</div>
+  <div class="scrim"></div>
+  <div class="max" style="position:relative; z-index:2; height:100%; display:flex; align-items:center;">
+    <h1 class="hero-h1">MH NDC — The Future of<br>Distribution</h1>
+  </div>
+</div>
+<div class="max" style="margin-top:-40px; position:relative; z-index:3;">
+  <div class="card" style="padding:30px 34px; margin-bottom:36px;">
+    <h3 style="font-size:19px; font-weight:800; color:var(--heading); margin:0 0 8px;">Richer content, direct from MH</h3>
+    <p style="margin:0; color:var(--body);">MH NDC lets appointed agents access richer fare content, ancillaries, and merchandising directly through their booking tool of choice — no redirection required.</p>
+  </div>
+</div>
+<div class="section-alt" style="padding:8px 0 36px;">
+  <div class="max">
+    <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Benefits for You</h2></div>
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; gap:14px; align-items:flex-start;"><span style="font-size:20px; color:var(--blue);">★</span><div><b style="color:var(--heading);">Improve competitiveness</b><p style="margin:2px 0 0; font-size:12.5px;">Access exclusive fares and offers not available via legacy channels.</p></div></div>
+      <div style="display:flex; gap:14px; align-items:flex-start;"><span style="font-size:20px; color:var(--blue);">★</span><div><b style="color:var(--heading);">Boost agent productivity</b><p style="margin:2px 0 0; font-size:12.5px;">Fewer manual steps between search, price, and ticketing.</p></div></div>
+      <div style="display:flex; gap:14px; align-items:flex-start;"><span style="font-size:20px; color:var(--blue);">★</span><div><b style="color:var(--heading);">Enhance customer satisfaction</b><p style="margin:2px 0 0; font-size:12.5px;">Faster quotes and more relevant ancillary offers for travellers.</p></div></div>
+    </div>
+  </div>
+</div>
+<div class="max" style="padding:36px 0;">
+  <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Flexible API Features</h2></div>
+  <div class="grid3" style="margin-bottom:36px;">
+    <div class="card" style="padding:20px;"><b style="color:var(--heading);">Dynamic Pricing</b><ul style="font-size:12px; color:var(--body); padding-left:16px; margin-top:8px;"><li>Real-time fare rules</li><li>Bundled ancillaries</li></ul></div>
+    <div class="card" style="padding:20px;"><b style="color:var(--heading);">Rich Content</b><ul style="font-size:12px; color:var(--body); padding-left:16px; margin-top:8px;"><li>Seat maps &amp; media</li><li>Branded fares</li></ul></div>
+    <div class="card" style="padding:20px;"><b style="color:var(--heading);">Servicing</b><ul style="font-size:12px; color:var(--body); padding-left:16px; margin-top:8px;"><li>Self-service changes</li><li>Automated refunds</li></ul></div>
+  </div>
+  <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Get Started</h2></div>
+  <div style="margin-bottom:10px;">
+    <div style="display:flex; gap:16px; margin-bottom:16px;"><div style="width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">1</div><p style="margin:4px 0 0;">Register your agency for MH NDC API access.</p></div>
+    <div style="display:flex; gap:16px; margin-bottom:16px;"><div style="width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">2</div><p style="margin:4px 0 0;">Integrate via your preferred aggregator or direct connection.</p></div>
+    <div style="display:flex; gap:16px;"><div style="width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">3</div><p style="margin:4px 0 0;">Go live and start booking with richer content.</p></div>
+  </div>
+  <span class="btn-primary" onclick="goToLogin('screen-auth-home')">Register Now</span>
+</div>
+</section>
+
+<!-- PUBLIC: OPERATIONAL UPDATES LIST -->
+<section id="screen-pub-updates" class="screen">
+<div class="op-wrap">
+  <div class="op-card">
+    <h1 class="op-h1">Previous Updates</h1>
+    <ul class="op-list">
+      <li><div><span class="op-date">12 Aug 2026</span><p class="op-title">MH Portal — New Booking Portal Now Live</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">05 Aug 2026</span><p class="op-title">Revised Baggage Allowance for Domestic Sectors</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">28 Jul 2026</span><p class="op-title">Scheduled Maintenance — Weekend of 15 August</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">21 Jul 2026</span><p class="op-title">Update: East Malaysia Flight Frequencies</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">14 Jul 2026</span><p class="op-title">New Group Booking Desk Contact Details</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">02 Jul 2026</span><p class="op-title">Codeshare Ticketing Reference Guide Updated</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- PUBLIC: OPERATIONAL UPDATE DETAIL -->
+<section id="screen-pub-update-detail" class="screen">
+<div class="op-wrap">
+  <div class="op-card">
+    <h1 class="op-h1">MH Portal — New Booking Portal Now Live</h1>
+    <p class="op-share" onclick="toast('Link copied — share this article')">Share this article</p>
+    <div class="op-body">
+      <p>We are pleased to announce that the new MH Portal booking experience is now live for all appointed travel agents. This update introduces a streamlined flight search flow, richer fare content, and faster order retrieval.</p>
+      <p>Agents can continue to access existing bookings made through the previous system — no re-registration is required. Training materials and a quick-start guide are available under Agent Resources &gt; Training &amp; Certification.</p>
+      <p>Should you encounter any issues during the transition, please reach out to the MH trade support desk via the Contact Us page.</p>
+    </div>
+    <div style="margin-top:24px;"><a style="font-weight:700;" onclick="goUpdates()">‹ Back to Previous Updates</a></div>
+  </div>
+</div>
+</section>
+
+<!-- AUTH: HOME -->
+<section id="screen-auth-home" class="screen">
+<div class="max" style="padding-top:26px;">
+  <div class="grid2" style="grid-template-columns:1.4fr 1fr; margin-bottom:24px;">
+    <div class="photo tile" id="auth-hero-photo" data-img="heroMY" style="height:320px; cursor:default;">
+      <div class="plane" style="top:30px; left:60%;">✈</div>
+      <div class="scrim"></div>
+      <div class="cap"><div><h1 class="hero-h1">Welcome back, Aiman</h1></div><div style="color:#fff;">●○○</div></div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="photo tile" data-img="operationalUpdates" style="height:150px;" onclick="goUpdates()"><div class="scrim"></div><div class="cap"><span class="lbl">Operational Updates</span><span class="more">Read More ›</span></div></div>
+      <div class="photo tile" data-img="policyProcedures" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Policy Procedures</span><span class="more">Read More ›</span></div></div>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-bottom:40px;">
+    <div class="photo tile" data-img="fareSheets" style="height:110px;" onclick="goResource()"><div class="cap" style="align-items:flex-start;"><span class="lbl">Fare Sheets</span><span class="more">Read More ›</span></div></div>
+    <div class="photo tile" data-img="policyDocument" style="height:110px;" onclick="goResource()"><div class="cap" style="align-items:flex-start;"><span class="lbl">Policy Document</span><span class="more">Read More ›</span></div></div>
+    <div class="photo tile" data-img="travelInfoCentre" style="height:110px;" onclick="goResource()"><div class="cap" style="align-items:flex-start;"><span class="lbl">Travel Info Centre</span><span class="more">Read More ›</span></div></div>
+  </div>
+
+  <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Airline News</h2></div>
+  <div class="grid3" style="margin-bottom:40px;">
+    <div class="news-card"><div class="photo thumb" data-img="newsEastMalaysia"></div><div class="body"><h4>New Routes to East Malaysia</h4><p>MH expands connectivity across Sabah and Sarawak this season.</p><a class="link" onclick="goUpdateDetail()">Find out more ›</a></div></div>
+    <div class="news-card"><div class="photo thumb" data-img="newsPartnerOffers"></div><div class="body"><h4>Enrich Travel Partner Offers</h4><p>Exclusive fares for appointed travel agents booking this quarter.</p><a class="link" onclick="goUpdateDetail()">Find out more ›</a></div></div>
+    <div class="news-card"><div class="photo thumb" data-img="newsLangkawiActivities"></div><div class="body"><h4>Explore Langkawi Activities</h4><p>Cross-sell curated tours and activities alongside MH fares.</p><a class="link" onclick="goUpdateDetail()">Find out more ›</a></div></div>
+  </div>
+</div>
+</section>
+
+<!-- AUTH: CATEGORY HUB -->
+<section id="screen-auth-hub" class="screen">
+<div class="max" style="padding-top:28px;">
+  <div class="flag"><div class="bar1"></div><div class="bar2"></div><h2>Agent Resources</h2></div>
+  <div class="grid3" style="margin-bottom:22px;">
+    <div class="photo tile" data-img="fareSheets" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Fare Sheets</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="policyDocument" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Policy Documents</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="travelInfoCentre" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Travel Info Centre</span><span style="color:#fff;">›</span></div></div>
+  </div>
+  <div class="grid3" style="margin-bottom:36px;">
+    <div class="photo tile" data-img="tradeCirculars" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Trade Circulars</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="groupBookings" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Group Bookings</span><span style="color:#fff;">›</span></div></div>
+    <div class="photo tile" data-img="trainingCertification" style="height:150px;" onclick="goResource()"><div class="scrim"></div><div class="cap"><span class="lbl">Training &amp; Certification</span><span style="color:#fff;">›</span></div></div>
+  </div>
+</div>
+</section>
+
+<!-- AUTH: INTERIOR RESOURCE -->
+<section id="screen-auth-interior" class="screen">
+<div class="max">
+  <div class="breadcrumb"><a onclick="showScreen('screen-auth-hub')">Agent Resources</a><span class="sep">/</span><span class="cur">Policy Documents</span></div>
+  <h1 class="page-h1" style="margin-top:14px;">Policy Documents</h1>
+
+  <div class="tabs">
+    <div class="tab active" onclick="setTab(this)">Trade Circulars</div>
+    <div class="tab" onclick="setTab(this)">Product Update</div>
+    <div class="tab" onclick="setTab(this)">MH Resources</div>
+  </div>
+
+  <div class="card" style="margin:18px 0 40px; overflow:hidden;">
+    <div class="list-row"><span class="title">Fare Rules Update — Effective 1 September 2026<span class="badge-new">New</span></span><span class="date">12 Aug 2026</span><a class="dl" onclick="toast('Downloading PDF (demo)')">Download PDF</a></div>
+    <div class="list-row"><span class="title">Group Booking Policy Revision<span class="badge-new">New</span></span><span class="date">05 Aug 2026</span><a class="dl" onclick="toast('Downloading PDF (demo)')">Download PDF</a></div>
+    <div class="list-row"><span class="title">Refund &amp; Reissue Guidelines Q3</span><span class="date">28 Jul 2026</span><a class="dl" onclick="toast('Downloading PDF (demo)')">Download PDF</a></div>
+    <div class="list-row"><span class="title">Special Baggage Allowance — Sports Equipment</span><span class="date">14 Jul 2026</span><a class="dl" onclick="toast('Downloading PDF (demo)')">Download PDF</a></div>
+    <div class="list-row"><span class="title">Corporate ID Programme Terms</span><span class="date">02 Jul 2026</span><a class="dl" onclick="toast('Downloading PDF (demo)')">Download PDF</a></div>
+    <div class="list-row"><span class="title">Codeshare Ticketing Reference Guide</span><span class="date">21 Jun 2026</span><a class="dl" onclick="toast('Downloading PDF (demo)')">Download PDF</a></div>
+  </div>
+</div>
+</section>
+
+<!-- AUTH: SERVICE MANAGEMENT -->
+<section id="screen-auth-service" class="screen">
+<div class="max">
+  <h1 class="page-h1" style="margin-top:22px;">Service Requests</h1>
+  <div class="svc-wrap">
+    <div class="svc-side">
+      <div class="item active" onclick="setFilter(this)">✅ Approved / Processed <span class="count">18</span></div>
+      <div class="item" onclick="setFilter(this)">❌ Rejected <span class="count">2</span></div>
+      <div class="item" onclick="setFilter(this)">⏳ Pending <span class="count">5</span></div>
+      <div class="item" onclick="setFilter(this)">↩ Shared with me <span class="count">3</span></div>
+      <div class="item" onclick="setFilter(this)">★ Starred <span class="count">1</span></div>
+      <div class="item" onclick="setFilter(this)">📦 Archived <span class="count">9</span></div>
+      <div class="item" onclick="setFilter(this)">↺ Withdrawn <span class="count">0</span></div>
+    </div>
+    <div class="svc-main">
+      <div class="svc-topbar">
+        <div class="svc-search">Search requests…</div>
+        <span class="btn-pill-cta" onclick="openModal()">+ New Service Request</span>
+      </div>
+      <div class="svc-filters">
+        <div class="f">Request Type ▾</div>
+        <div class="f">Sort By Date ▾</div>
+      </div>
+      <div class="svc-list">
+        <div class="list-row"><span class="title">Waiver Request — PNR XJ4K21</span><span class="date">11 Aug 2026</span><span class="dl green" style="cursor:default;">Approved</span></div>
+        <div class="list-row"><span class="title">Fare Adjustment — PNR 9PLQ7A</span><span class="date">10 Aug 2026</span><span class="dl amber" style="cursor:default;">Pending</span></div>
+        <div class="list-row"><span class="title">Name Correction — PNR 3TZQW2</span><span class="date">08 Aug 2026</span><span class="dl green" style="cursor:default;">Approved</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="svc-modal" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <div class="modal-close" onclick="closeModal()">&times;</div>
+    <h3>Submit a New Request</h3>
+    <div class="opt-grid">
+      <div class="opt" onclick="closeModal(); toast('Demo: would open the Fee Waiver form')"><div class="lbl">Waiver Request</div><b>Fee Waiver</b><p>Request a waiver for change or cancellation fees.</p></div>
+      <div class="opt" onclick="closeModal(); toast('Demo: would open the Special Assistance form')"><div class="lbl">Service Request</div><b>Special Assistance</b><p>Arrange wheelchair, meal, or other passenger assistance.</p></div>
+      <div class="opt" onclick="closeModal(); toast('Demo: would open the Name Correction form')"><div class="lbl">General Form</div><b>Name Correction</b><p>Submit a minor name correction for an existing booking.</p></div>
+      <div class="opt" onclick="closeModal(); toast('Demo: would open the Group Booking form')"><div class="lbl">General Form</div><b>Group Booking Enquiry</b><p>Start a new group booking request for 10+ passengers.</p></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- AUTH: OPERATIONAL UPDATES LIST -->
+<section id="screen-auth-updates" class="screen">
+<div class="op-wrap">
+  <div class="op-card">
+    <h1 class="op-h1">Previous Updates</h1>
+    <ul class="op-list">
+      <li><div><span class="op-date">12 Aug 2026</span><p class="op-title">MH Portal — New Booking Portal Now Live</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">05 Aug 2026</span><p class="op-title">Revised Baggage Allowance for Domestic Sectors</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">28 Jul 2026</span><p class="op-title">Scheduled Maintenance — Weekend of 15 August</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">21 Jul 2026</span><p class="op-title">Update: East Malaysia Flight Frequencies</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">14 Jul 2026</span><p class="op-title">New Group Booking Desk Contact Details</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+      <li><div><span class="op-date">02 Jul 2026</span><p class="op-title">Codeshare Ticketing Reference Guide Updated</p></div><a class="op-view" onclick="goUpdateDetail()">View Details</a></li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- AUTH: OPERATIONAL UPDATE DETAIL -->
+<section id="screen-auth-update-detail" class="screen">
+<div class="op-wrap">
+  <div class="op-card">
+    <h1 class="op-h1">MH Portal — New Booking Portal Now Live</h1>
+    <p class="op-share" onclick="toast('Link copied — share this article')">Share this article</p>
+    <div class="op-body">
+      <p>We are pleased to announce that the new MH Portal booking experience is now live for all appointed travel agents. This update introduces a streamlined flight search flow, richer fare content, and faster order retrieval.</p>
+      <p>Agents can continue to access existing bookings made through the previous system — no re-registration is required. Training materials and a quick-start guide are available under Agent Resources &gt; Training &amp; Certification.</p>
+      <p>Should you encounter any issues during the transition, please reach out to the MH trade support desk via the Contact Us page.</p>
+    </div>
+    <div style="margin-top:24px;"><a style="font-weight:700;" onclick="goUpdates()">‹ Back to Previous Updates</a></div>
+  </div>
+</div>
+</section>
+
+</main>
+
+<footer class="site" id="site-footer">
+  <div class="max cols">
+    <div><h5>Agent Resources</h5><a onclick="goResource()">Fare Sheets</a><a onclick="goResource()">Policy Documents</a><a onclick="goResource()">Travel Info Centre</a></div>
+    <div><h5>Support</h5><a onclick="toast('FAQs (demo)')">FAQs</a><a onclick="toast('Contact Us (demo)')">Contact Us</a><a onclick="toast('Trade Support Desk (demo)')">Trade Support Desk</a></div>
+    <div><h5>Company</h5><a onclick="toast('About MH (demo)')">About MH</a><a onclick="toast('Careers (demo)')">Careers</a><a onclick="toast('Newsroom (demo)')">Newsroom</a></div>
+    <div><h5>Legal</h5><a onclick="toast('Privacy Policy (demo)')">Privacy Policy</a><a onclick="toast('Cookies Policy (demo)')">Cookies Policy</a><a onclick="toast('Terms &amp; Conditions (demo)')">Terms &amp; Conditions</a></div>
+  </div>
+  <div class="max cta-row">
+    <div class="social"><span>f</span><span>in</span><span>✉</span></div>
+  </div>
+  <div class="max legal">
+    <div>&copy; 2026 Malaysia Airlines Berhad. All rights reserved.</div>
+    <div>Malaysia Airlines Group &middot; Firefly &middot; MASwings &middot; Oneworld Member</div>
+  </div>
+</footer>
+
+<div id="transition-overlay">
+  <div class="spinner"></div>
+  <div class="t-msg">Signing in…</div>
+</div>
+
+<div class="modal-overlay" id="booktrip-modal" onclick="if(event.target===this) closeBookTripModal()">
+  <div class="modal" style="width:440px;">
+    <div class="modal-close" onclick="closeBookTripModal()">&times;</div>
+    <h3>Redirecting…</h3>
+    <p style="margin:0 0 24px; color:var(--body); font-size:14px; line-height:1.6;">You're being redirected to <b>MHPlus 2.0</b> for flight booking and servicing.</p>
+    <button class="btn-full" onclick="closeBookTripModal()">Continue</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="proto-menu">
+  <button id="proto-toggle" onclick="toggleProtoPanel()">☰ Prototype Menu</button>
+  <div id="proto-panel">
+    <div class="proto-group">Public Marketing</div>
+    <button onclick="showScreen('screen-pub-home')">Home</button>
+    <button onclick="showScreen('screen-pub-hub')">Category Hub</button>
+    <button onclick="showScreen('screen-pub-explainer')">MH NDC Explainer</button>
+    <button onclick="showScreen('screen-pub-updates')">Operational Updates (List)</button>
+    <button onclick="showScreen('screen-pub-update-detail')">Operational Updates (Detail)</button>
+    <div class="proto-group">Sign In Flow</div>
+    <button onclick="goToLogin('screen-auth-home')">Login (User ID + Password)</button>
+    <button onclick="showScreen('screen-otp')">OTP Verification</button>
+    <div class="proto-group">Authenticated Portal</div>
+    <button onclick="showScreen('screen-auth-home')">Authenticated Home</button>
+    <button onclick="showScreen('screen-auth-hub')">Category Hub</button>
+    <button onclick="showScreen('screen-auth-interior')">Policy Documents</button>
+    <button onclick="showScreen('screen-auth-service')">Service Management</button>
+    <button onclick="showScreen('screen-auth-updates')">Operational Updates (List)</button>
+    <button onclick="showScreen('screen-auth-update-detail')">Operational Updates (Detail)</button>
+  </div>
+</div>
+
+<script>
+const PUBLIC_HEADER_HTML = `
+<header class="site">
+  <div class="max bar">
+    <div class="logo" style="cursor:pointer;" onclick="showScreen('screen-pub-home')"><span class="mh">MH</span> Portal</div>
+    <nav class="main">
+      <a class="active" onclick="goAgentResources()">Agent Resources</a>
+      <a onclick="goService()">Service Request</a>
+      <a onclick="showScreen('screen-pub-explainer')">MH NDC</a>
+    </nav>
+    <div class="utils">
+      <div class="locale-wrap">
+        <span class="locale-pill" onclick="toggleLocaleMenu(event)"><span class="locale-label">ENG 🇬🇧</span> ▾</span>
+        <div class="locale-dropdown"></div>
+      </div>
+      <span>🔍</span>
+      <a style="color:#fff;font-weight:700;" onclick="window.open('https://mhplus.malaysiaairlines.com/','_blank')">Register</a>
+      <span class="pill-white" onclick="goToLogin('screen-auth-home')">Sign In</span>
+    </div>
+  </div>
+</header>
+<div class="notice">
+  <div class="max row">
+    <b>Important :</b> <span>Scheduled system maintenance this weekend — booking tools may be briefly unavailable.</span>
+    <span class="spacer"></span>
+    <a onclick="goUpdates()">View All</a>
+    <span style="cursor:pointer;" onclick="this.closest('.notice').style.display='none'">&times;</span>
+  </div>
+</div>
+`;
+
+const AUTH_HEADER_HTML = `
+<header class="site">
+  <div class="max bar">
+    <div class="logo" style="cursor:pointer;" onclick="showScreen('screen-auth-home')"><span class="mh">MH</span> Portal</div>
+    <nav class="main">
+      <a class="active" onclick="goAgentResources()">Agent Resources</a>
+      <a onclick="goService()">Service Request</a>
+      <a onclick="showScreen('screen-pub-explainer')">MH NDC</a>
+    </nav>
+    <div class="utils">
+      <div class="locale-wrap">
+        <span class="locale-pill locale-pill-static" title="Resolved automatically from the agent's profile"><span class="locale-label">ENG 🇬🇧</span></span>
+      </div>
+      <span class="book-pill" onclick="openBookTripModal()">✈ Book Trip</span>
+      <span class="pill-white" onclick="simulateSignOut()">Log Out</span>
+    </div>
+  </div>
+</header>
+<div class="notice">
+  <div class="max row">
+    <b>Important :</b> <span>Scheduled system maintenance this weekend — booking tools may be briefly unavailable.</span>
+    <span class="spacer"></span>
+    <a onclick="goUpdates()">View All</a>
+    <span style="cursor:pointer;" onclick="this.closest('.notice').style.display='none'">&times;</span>
+  </div>
+</div>
+`;
+
+const GROUPS = {
+  'screen-login': null,
+  'screen-otp': null,
+  'screen-pub-home': 'public',
+  'screen-pub-hub': 'public',
+  'screen-pub-explainer': 'inherit',
+  'screen-pub-updates': 'public',
+  'screen-pub-update-detail': 'public',
+  'screen-auth-home': 'auth',
+  'screen-auth-hub': 'auth',
+  'screen-auth-interior': 'auth',
+  'screen-auth-service': 'auth',
+  'screen-auth-updates': 'auth',
+  'screen-auth-update-detail': 'auth'
+};
+
+let currentMode = null;
+
+// Country + locale selector: switching country changes real page content
+// (Home hero headline + category tiles) below, mirroring how the Agent 360
+// reference site varies content per market — not just a display-language toggle.
+const LOCALES = [
+  {key:'MY', flag:'🇲🇾', pill:'MALAYSIA - ENGLISH', label:'Malaysia - English'},
+  {key:'SG', flag:'🇸🇬', pill:'SINGAPORE - ENGLISH', label:'Singapore - English'},
+  {key:'AU', flag:'🇦🇺', pill:'AUSTRALIA - ENGLISH', label:'Australia - English'}
+];
+let currentLocale = LOCALES[0];
+
+// Country-specific Public Home content (hero headline + the 3 category tiles).
+// The two hero-adjacent quick-link tiles (Operational Updates / Policy
+// Procedures) and Airline News stay constant across markets, matching the
+// reference pattern where only the hero + bottom tile row vary by country.
+const HOME_CONTENT = {
+  MY: {
+    hero: 'Explore Langkawi with MH',
+    tiles: ['Fare Sheets', 'Policy Document', 'Travel Info Centre'],
+    heroImg: 'heroMY'
+  },
+  SG: {
+    hero: 'MH × Changi: Seamless Connections from Singapore',
+    tiles: ['Codeshare Booking Guide', 'GST & Trade Compliance', 'Travel Info Centre'],
+    heroImg: 'heroSG'
+  },
+  AU: {
+    hero: 'Fly More to Australia with MH',
+    tiles: ['ATAS Accreditation Notice', 'Refund & ADM Policy (AU)', 'Travel Info Centre'],
+    heroImg: 'heroAU'
+  }
+};
+
+// Hardcoded banner images (leadership feedback: replace gradient placeholders
+// with real photography). Sourced as royalty-free stock photos from Pexels
+// and hotlinked to their CDN — this sandbox cannot download/embed raw image
+// bytes, so these are live external URLs rather than files baked into this
+// HTML. Each element also keeps the original gradient as a background layer
+// beneath the photo, so if a URL ever fails to load the box still renders
+// the original placeholder look rather than going blank.
+const PHOTO_IMG = {
+  heroMY: 'https://images.pexels.com/photos/14222326/pexels-photo-14222326.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  heroSG: 'https://images.pexels.com/photos/290597/pexels-photo-290597.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  heroAU: 'https://images.pexels.com/photos/1533721/pexels-photo-1533721.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  operationalUpdates: 'https://images.pexels.com/photos/12094375/pexels-photo-12094375.jpeg?auto=compress&cs=tinysrgb&w=800',
+  policyProcedures: 'https://images.pexels.com/photos/5778670/pexels-photo-5778670.jpeg?auto=compress&cs=tinysrgb&w=800',
+  fareSheets: 'https://images.pexels.com/photos/7054421/pexels-photo-7054421.jpeg?auto=compress&cs=tinysrgb&w=800',
+  policyDocument: 'https://images.pexels.com/photos/8468119/pexels-photo-8468119.jpeg?auto=compress&cs=tinysrgb&w=800',
+  travelInfoCentre: 'https://images.pexels.com/photos/346885/pexels-photo-346885.jpeg?auto=compress&cs=tinysrgb&w=800',
+  tradeCirculars: 'https://images.pexels.com/photos/8470836/pexels-photo-8470836.jpeg?auto=compress&cs=tinysrgb&w=800',
+  groupBookings: 'https://images.pexels.com/photos/20139504/pexels-photo-20139504.jpeg?auto=compress&cs=tinysrgb&w=800',
+  trainingCertification: 'https://images.pexels.com/photos/18935245/pexels-photo-18935245.jpeg?auto=compress&cs=tinysrgb&w=800',
+  newsEastMalaysia: 'https://images.pexels.com/photos/30039958/pexels-photo-30039958.jpeg?auto=compress&cs=tinysrgb&w=600',
+  newsPartnerOffers: 'https://images.pexels.com/photos/8069428/pexels-photo-8069428.jpeg?auto=compress&cs=tinysrgb&w=600',
+  newsCabinUpgrade: 'https://images.pexels.com/photos/20562278/pexels-photo-20562278.jpeg?auto=compress&cs=tinysrgb&w=600',
+  newsLangkawiActivities: 'https://images.pexels.com/photos/11099854/pexels-photo-11099854.jpeg?auto=compress&cs=tinysrgb&w=600',
+  ndcHero: 'https://images.pexels.com/photos/17323801/pexels-photo-17323801.jpeg?auto=compress&cs=tinysrgb&w=1200'
+};
+
+function setPhotoImage(el, url){
+  if(!el || !url) return;
+  el.style.backgroundImage = "url('" + url + "'), radial-gradient(circle at 30% 25%, rgba(255,255,255,0.08), transparent 45%), linear-gradient(135deg,#12345C 0%, #0B2447 60%, #071A33 100%)";
+  el.style.backgroundSize = 'cover, auto, auto';
+  el.style.backgroundPosition = 'center, 30% 25%, 0 0';
+  el.style.backgroundRepeat = 'no-repeat, repeat, repeat';
+}
+
+function applyPhotoImages(){
+  document.querySelectorAll('[data-img]').forEach(function(el){
+    setPhotoImage(el, PHOTO_IMG[el.getAttribute('data-img')]);
+  });
+}
+
+function localeDropdownHTML(){
+  return LOCALES.map(function(l){
+    const check = (l.key === currentLocale.key) ? '<span class="loc-check">✓</span>' : '';
+    return '<div class="loc-item" onclick="setLocale(\'' + l.key + '\')"><span>' + l.flag + ' ' + l.label + '</span>' + check + '</div>';
+  }).join('');
+}
+
+function activeLocaleWrap(){
+  // Only one .locale-wrap is ever truly visible at a time: either the one
+  // mounted inside the current header (public/auth screens), or the one
+  // embedded directly in the active screen (login/OTP, which have no header).
+  return document.querySelector('#header-mount .locale-wrap') || document.querySelector('.screen.active .locale-wrap');
+}
+
+function renderLocalePill(){
+  // Keep every instance in the DOM in sync (hidden ones included) so state
+  // never appears to "reset" when a screen becomes visible again.
+  document.querySelectorAll('.locale-wrap').forEach(function(wrap){
+    const label = wrap.querySelector('.locale-label');
+    if(label) label.textContent = currentLocale.pill;
+    const dd = wrap.querySelector('.locale-dropdown');
+    if(dd) dd.innerHTML = localeDropdownHTML();
+  });
+  // Defensive: some browsers apply scroll-anchoring inside overflow:hidden
+  // containers (e.g. .login-page) when their DOM mutates, which can nudge
+  // scrollLeft off zero with no visible scrollbar. Reset it so content never
+  // silently drifts sideways.
+  document.querySelectorAll('.login-page').forEach(function(el){ el.scrollLeft = 0; });
+}
+
+function renderHomeContent(){
+  const c = HOME_CONTENT[currentLocale.key] || HOME_CONTENT.MY;
+  const heroEl = document.querySelector('#screen-pub-home .hero-h1');
+  if(heroEl) heroEl.textContent = c.hero;
+  const tileEls = document.querySelectorAll('#pub-home-tiles-row .lbl');
+  tileEls.forEach(function(el, i){ if(c.tiles[i]) el.textContent = c.tiles[i]; });
+  const heroPhoto = document.getElementById('pub-hero-photo');
+  if(heroPhoto) setPhotoImage(heroPhoto, PHOTO_IMG[c.heroImg]);
+}
+
+function toggleLocaleMenu(e){
+  if(e) e.stopPropagation();
+  const wrap = activeLocaleWrap();
+  const dd = wrap ? wrap.querySelector('.locale-dropdown') : null;
+  if(dd) dd.classList.toggle('active');
+}
+function closeLocaleMenu(){
+  document.querySelectorAll('.locale-dropdown').forEach(function(dd){ dd.classList.remove('active'); });
+}
+function setLocale(key){
+  const found = LOCALES.find(function(l){ return l.key === key; });
+  if(found) currentLocale = found;
+  renderLocalePill();
+  renderHomeContent();
+  closeLocaleMenu();
+  toast('Market set to ' + currentLocale.label + ' — Home page content updated (demo)');
+}
+
+function renderHeader(group){
+  const mount = document.getElementById('header-mount');
+  if(!group){ mount.innerHTML = ''; return; }
+  mount.innerHTML = group === 'auth' ? AUTH_HEADER_HTML : PUBLIC_HEADER_HTML;
+}
+
+function showScreen(id, opts){
+  opts = opts || {};
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  const target = document.getElementById(id);
+  if(!target) return;
+  target.classList.add('active');
+
+  const group = GROUPS[id];
+  if(group !== 'inherit'){
+    currentMode = group;
+    renderHeader(group);
+    document.body.classList.toggle('chrome-hidden', !group);
+  }
+  renderLocalePill();
+  renderHomeContent();
+
+  window.scrollTo(0,0);
+  closeProtoPanel();
+  closeLocaleMenu();
+
+  if(!opts.skipHistory && location.hash !== '#' + id){
+    location.hash = id;
+  }
+}
+
+function goAgentResources(){ currentMode === 'auth' ? showScreen('screen-auth-hub') : showScreen('screen-pub-hub'); }
+function goResource(){ currentMode === 'auth' ? showScreen('screen-auth-interior') : goToLogin('screen-auth-interior'); }
+function goService(){ currentMode === 'auth' ? showScreen('screen-auth-service') : goToLogin('screen-auth-service'); }
+function goUpdates(){ showScreen(currentMode === 'auth' ? 'screen-auth-updates' : 'screen-pub-updates'); }
+function goUpdateDetail(){ showScreen(currentMode === 'auth' ? 'screen-auth-update-detail' : 'screen-pub-update-detail'); }
+
+function showTransition(text, target){
+  const ov = document.getElementById('transition-overlay');
+  ov.querySelector('.t-msg').textContent = text;
+  ov.classList.add('active');
+  setTimeout(function(){
+    ov.classList.remove('active');
+    showScreen(target);
+  }, 650);
+}
+function simulateSignOut(){ showTransition('Signing out…', 'screen-pub-home'); }
+
+let loginRedirectTarget = 'screen-auth-home';
+
+function goToLogin(target){
+  loginRedirectTarget = target || 'screen-auth-home';
+  showScreen('screen-login');
+  const first = document.querySelector('#screen-login #login-userid');
+  if(first) first.focus();
+}
+
+function togglePasswordVisibility(){
+  const pw = document.getElementById('login-password');
+  const btn = pw.parentElement.querySelector('.toggle-pw');
+  if(pw.type === 'password'){ pw.type = 'text'; btn.textContent = 'Hide'; }
+  else{ pw.type = 'password'; btn.textContent = 'Show'; }
+}
+
+function submitLogin(){
+  const uid = document.getElementById('login-userid').value.trim();
+  const pw = document.getElementById('login-password').value.trim();
+  if(!uid || !pw){ toast('Please enter your User ID and Password'); return; }
+  showScreen('screen-otp');
+  resetOtpBoxes();
+}
+
+function resetOtpBoxes(){
+  const boxes = document.querySelectorAll('#otp-boxes input');
+  boxes.forEach(function(b){ b.value = ''; });
+  if(boxes[0]) boxes[0].focus();
+}
+
+function submitOtp(){
+  const boxes = document.querySelectorAll('#otp-boxes input');
+  let code = '';
+  boxes.forEach(function(b){ code += b.value; });
+  if(code.length < 6){ toast('Please enter the 6-digit code'); return; }
+  showTransition('Verifying code…', loginRedirectTarget);
+}
+
+function wireOtpBoxes(){
+  const boxes = document.querySelectorAll('#otp-boxes input');
+  boxes.forEach(function(box, i){
+    box.addEventListener('input', function(){
+      box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if(box.value && boxes[i + 1]) boxes[i + 1].focus();
+    });
+    box.addEventListener('keydown', function(e){
+      if(e.key === 'Backspace' && !box.value && boxes[i - 1]) boxes[i - 1].focus();
+    });
+    box.addEventListener('paste', function(e){
+      e.preventDefault();
+      const digits = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').split('');
+      boxes.forEach(function(b, j){ b.value = digits[j] || ''; });
+      const nextEmpty = Array.prototype.find.call(boxes, function(b){ return !b.value; });
+      (nextEmpty || boxes[boxes.length - 1]).focus();
+    });
+  });
+}
+
+function toggleProtoPanel(){ document.getElementById('proto-panel').classList.toggle('active'); }
+function closeProtoPanel(){ const p = document.getElementById('proto-panel'); if(p) p.classList.remove('active'); }
+
+function setTab(el){ el.parentElement.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); }); el.classList.add('active'); }
+function setFilter(el){ el.parentElement.querySelectorAll('.item').forEach(function(i){ i.classList.remove('active'); }); el.classList.add('active'); }
+
+function openModal(){ document.getElementById('svc-modal').classList.add('active'); }
+function closeModal(){ document.getElementById('svc-modal').classList.remove('active'); }
+
+function openBookTripModal(){ document.getElementById('booktrip-modal').classList.add('active'); }
+function closeBookTripModal(){ document.getElementById('booktrip-modal').classList.remove('active'); }
+
+let toastTimer = null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+
+window.addEventListener('hashchange', function(){
+  const id = location.hash.replace('#','') || 'screen-pub-home';
+  if(document.getElementById(id)) showScreen(id, {skipHistory:true});
+});
+
+document.addEventListener('click', function(e){
+  const menu = document.getElementById('proto-menu');
+  if(menu && !menu.contains(e.target)) closeProtoPanel();
+  const locWrap = activeLocaleWrap();
+  if(locWrap && !locWrap.contains(e.target)) closeLocaleMenu();
+  else if(!locWrap) closeLocaleMenu();
+});
+
+(function init(){
+  wireOtpBoxes();
+  applyPhotoImages();
+  const id = location.hash.replace('#','');
+  showScreen((id && document.getElementById(id)) ? id : 'screen-pub-home', {skipHistory:true});
+})();
+</script>
+
+</body>
+</html>
